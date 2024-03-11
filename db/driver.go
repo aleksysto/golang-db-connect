@@ -7,13 +7,13 @@ import (
 	"net/url"
 )
 
-type BoltAgent struct {
-	Product string `json:"product"`
-}
+//	type BoltAgent struct {
+//		Product string `json:"product"`
+//	}
 type helloData struct {
-	UserData  AuthData  `json:"auth"`
-	UserAgent string    `json:"user_agent"`
-	BoltAgent BoltAgent `json:"bolt_agent"`
+	UserData  AuthData `json:"auth"`
+	UserAgent string   `json:"user_agent"`
+	//BoltAgent BoltAgent `json:"bolt_agent"`
 }
 type AuthData struct {
 	Scheme    string `json:"scheme"`
@@ -98,13 +98,20 @@ func (d *Driver) OpenConnection(uri string) {
 		AuthData{
 			"basic",
 			"neo4j",
-			"test1234",
+			"password",
 		},
 		"Go Driver/5.17.0",
-		BoltAgent{"neo4j/5.13.0"},
+		// BoltAgent{},
 	}
 
-	jsonBytes, err := json.Marshal(helloMessage)
+	helloMessage2 := map[string]any{}
+	helloMessage2["user_agent"] = "Go Driver/5.17.0"
+	helloMessage2["auth"] = map[string]string{
+		"scheme":      "basic",
+		"principal":   "neo4j",
+		"credentials": "password",
+	}
+	jsonBytes, err := json.Marshal(helloMessage2)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
 		return
