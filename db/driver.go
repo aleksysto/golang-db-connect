@@ -1,10 +1,14 @@
 package db
 
 import (
+	"bufio"
+//	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/url"
+
+	"github.com/aleksysto/golang-db-connect.git/packer"
 )
 
 //	type BoltAgent struct {
@@ -58,6 +62,7 @@ type Driver struct {
 	DbUser *string
 	DbPass *string
 	DbUri  *string
+    Decoder packer.Decoder
 }
 
 func (d *Driver) Connect(uri string) {
@@ -79,21 +84,31 @@ func (d *Driver) OpenConnection(uri string) {
 	if err != nil {
 		fmt.Println("error netdial", err)
 	}
-	response := make([]byte, 94) // Assuming a fixed 4-byte response for the handshake
+	//    response := make([]byte, 94) // Assuming a fixed 4-byte response for the handshake
+	reader := bufio.NewReader(conn)
 
 	_, err = conn.Write(handshake)
 	if err != nil {
 		fmt.Println("error handshake write", err)
 	}
 
-	_, err = conn.Read(response)
-	if err != nil {
-		fmt.Println("Error reading handshake response:", err)
-		return
-	}
+    res := make([]byte, 2)
+    _, _ = reader.Read(res)
+    length, err := packer.ReadLength(res)
+    fmt.Println(length)
+    if err != nil {
+        fmt.Println("error scanning bytes")
+    }
 
-	fmt.Println(response, "response handshake\n")
-
+	response := make([]byte, length)
+    n, err := reader.Read(response)
+    if err != nil {
+        fmt.Println("error reading chunk")
+    }
+    if uint16(n) != length {
+        fmt.Println("error reading all of data")
+    }
+    fmt.Println(response)
 	helloMessage := helloData{
 		AuthData{
 			"basic",
@@ -103,7 +118,7 @@ func (d *Driver) OpenConnection(uri string) {
 		"Go Driver/5.17.0",
 		// BoltAgent{},
 	}
-
+	fmt.Println(helloMessage)
 	helloMessage2 := map[string]any{}
 	helloMessage2["user_agent"] = "Go Driver/5.17.0"
 	helloMessage2["auth"] = map[string]string{
@@ -124,21 +139,26 @@ func (d *Driver) OpenConnection(uri string) {
 		fmt.Println("Error sending hello", err)
 		return
 	}
+    res = make([]byte, 2)
+    _, _ = reader.Read(res)
+    fmt.Printf("%x", res)
+    length, err = packer.ReadLength(res)
+    fmt.Println(length)
+    if err != nil {
+        fmt.Println("error scanning bytes")
+    }
 
-	_, err = conn.Read(response)
-	if err != nil {
-		fmt.Println("Error reading hello response:", err)
-		return
-	}
-	var m struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	}
-	json.Unmarshal(response, &m)
-	fmt.Println(m)
-	fmt.Println(response, "response helloMessage")
-
-	//conn.Close()
+	response = make([]byte, length)
+    n, err = reader.Read(response)
+    if err != nil {
+        fmt.Println("error reading chunk")
+    }
+    if uint16(n) != length {
+        fmt.Println("error reading all of data")
+    }
+    fmt.Printf("%x", response)
+	packer.Unmarshal(response)
+	conn.Close()
 }
 
 func NewDriver() *Driver {

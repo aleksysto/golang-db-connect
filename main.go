@@ -2,9 +2,11 @@ package main
 
 import (
 	"github.com/aleksysto/golang-db-connect.git/db"
+   // "github.com/aleksysto/golang-db-connect.git/packer"
 )
 
 func main() {
-	d := db.NewDriver()
-	d.OpenConnection("bolt://localhost:7687")
+    driver := db.NewDriver()
+    driver.OpenConnection("bolt+://localhost:7687")
+	
 }
